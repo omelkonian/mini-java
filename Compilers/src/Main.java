@@ -1,14 +1,15 @@
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import parser.Parser;
-import ast.AbstractSyntaxTree;
-import ast.DigitNode;
-import ast.Node;
-import ast.OperatorNode;
 
 public class Main {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		Parser parser = new Parser();
-		String expression = new String("((1 + 2 + 3) + (5 * 4 / 3))"); 
-		System.out.print("Syntax is " + ((parser.parse(expression)) ? "correct.":"wrong."));
+		String expression = new String("1+5-(1*5/2)\n"); 
+		System.out.println(expression);
+		System.out.print("Syntax is " + ((parser.parse(new ByteArrayInputStream(expression.getBytes(StandardCharsets.UTF_8)))) ? "correct.":"wrong."));
 		
 //		AbstractSyntaxTree ast = new AbstractSyntaxTree();
 //		OperatorNode root = new OperatorNode('+');
