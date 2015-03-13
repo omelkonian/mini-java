@@ -6,8 +6,8 @@ import java.nio.charset.StandardCharsets;
 public class Main {
 	public static void main(String[] args) throws IOException {
 //		String expression = "1 /   (    ( 1/   2)   / ( 3 /4 ) )    \n";
-//		String expression = "1+3*5+7/2\n";
-		String expression = "3-2-1\n";
+		String expression = "1+3*5+7/2\n";
+//		String expression = "3-2-1\n";
 		System.out.println(expression);
 		Parser parser = new Parser();
 		try {

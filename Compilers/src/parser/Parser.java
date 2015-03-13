@@ -81,8 +81,7 @@ public class Parser {
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			} else {
-				expr2 = expr2.insert(getInsertPosition(expr2), term + " ");
-				StringBuilder toPush = new StringBuilder("(+ " + expr2 + ")");
+				StringBuilder toPush = expr2.insert(getInsertPosition(expr2), "(+ " + term + ") ");
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			}
@@ -99,8 +98,7 @@ public class Parser {
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			} else {
-				expr2 = expr2.insert(getInsertPosition(expr2), term + " ");
-				StringBuilder toPush = new StringBuilder("(- " + expr2 + ")");
+				StringBuilder toPush = expr2.insert(getInsertPosition(expr2), "(- " + term + ") ");
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			}
@@ -141,8 +139,7 @@ public class Parser {
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			} else {
-				term2 = term2.insert(getInsertPosition(term2), factor + " ");
-				StringBuilder toPush = new StringBuilder("(* " + term2 + ")");
+				StringBuilder toPush = term2.insert(getInsertPosition(term2), "(* " + factor + ") ");
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			}
@@ -159,8 +156,7 @@ public class Parser {
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			} else {
-				term2 = term2.insert(getInsertPosition(term2), factor + " ");
-				StringBuilder toPush = new StringBuilder("(/ " + term2 + ")");
+				StringBuilder toPush = term2.insert(getInsertPosition(term2), "(/ " + factor + ") ");
 				stack.push(toPush);
 				System.out.println("ToPush: " + toPush);
 			}
@@ -199,17 +195,18 @@ public class Parser {
 				int j = i + 3;
 				// First operand
 				if (string.charAt(j) == '(') {
-					int openPars = 1;					
-					while (openPars != 0) {
-						j++;
+					int openPars = 1;
+					j++;
+					while (openPars != 0) {						
 						if (string.charAt(j) == ')') openPars--;
 						else if (string.charAt(j) == '(') openPars++;
+						j++;
 					}
 					j--;
 				}
 				// Second operand
 				if (string.charAt(j + 1) == ')')
-					return i+3;
+					return i + 3;
 			}
 		}
 		return -1;
