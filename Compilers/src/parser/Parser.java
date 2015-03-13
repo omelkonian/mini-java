@@ -6,168 +6,212 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * ----------	---GRAMMAR---------------
+ * ---------- ---GRAMMAR---------------
  * 
- * 	1. 	goal   ->	expr
- *	2. 	expr   -> 	term expr2	
- *	3. 	expr2  ->	'+' term expr2
- *	4.		   |	'-' term expr2
- *	5.		   |    ε
- *	6.	term   ->	factor term2
- *	7.	term2  ->	'*' factor term2
- *	8.		   |	'/' factor term2    
- *	9.		   |    ε
- * 	10.	factor ->	'0..9'  
- * 	11. 	   |	( expr )
+ * 1. goal -> expr
+ *  
+ * 2. expr  -> term expr2 
+ * 3. expr2 -> '+' term expr2 
+ * 4. 		|  '-' term expr2 
+ * 5. 		|  ε
+ *  
+ * 6. term  -> factor term2 
+ * 7. term2 -> '*' factor term2 
+ * 8. 		|  '/' factor term2 
+ * 9. 		|  ε 
+ * 
+ * 10. factor -> '0..9' 
+ * 11. 		  |  (expr)
  * 
  */
 public class Parser {
 	private int lookaheadToken;
 	private InputStream in;
 	private Deque<StringBuilder> stack;
-	
-	public boolean parse(InputStream in) throws IOException {
+
+	public void parse(InputStream in) throws IOException, ParseError {
 		this.in = in;
 		this.stack = new ArrayDeque<StringBuilder>();
-		lookaheadToken = in.read();
-		return goal();
+		lookaheadToken = consume();
+		goal();
 	}
 	
-	private boolean goal() throws IOException {
+	private int consume() throws IOException {
+		int ret = in.read();
+		while (ret == ' ')
+			ret = in.read();
+		return ret;
+	}
+
+	private void goal() throws IOException, ParseError {
 		// goal -> expr
-		if (expr()) {
-			
-			return true;
-		}
-		return false;
+		expr();	
+		if (lookaheadToken != '\n' && lookaheadToken != -1)
+			throw new ParseError();
+		System.out.println("-> " + stack.pop().toString());
 	}
-	
-	private boolean expr() throws IOException {
-		System.out.println("expr");
+
+	private void expr() throws IOException, ParseError {
 		// expr -> term expr2
-		if (term() && expr2()) {
-			StringBuilder expr2 = stack.pop();
-			StringBuilder term = stack.pop();
-			//...
-			return true;
+		term();
+		expr2();
+		StringBuilder expr2 = stack.pop();
+		StringBuilder term = stack.pop();
+		if (expr2.toString().equals("")) {
+			stack.push(term); 
+			System.out.println("ToPush: " + term);
 		}
-		return false;
+		else {
+			StringBuilder toPush = expr2.insert(getInsertPosition(expr2), term + " ");
+			stack.push(toPush);
+			System.out.println("ToPush: " + toPush);
+		}
 	}
-	
-	private boolean expr2() throws IOException {
-		System.out.println("expr2");
+
+	private void expr2() throws IOException, ParseError {
 		// expr2 -> + term expr2
 		if (lookaheadToken == '+') {
-			lookaheadToken = in.read();
-			if (term() && expr2()) {
-				StringBuilder expr2 = stack.pop();
-				StringBuilder term = stack.pop();
-				return true;
+			lookaheadToken = consume();
+			term();
+			expr2();
+			StringBuilder expr2 = stack.pop();
+			StringBuilder term = stack.pop();
+			if (expr2.toString().equals("")) {
+				StringBuilder toPush = new StringBuilder("(+ " + term + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
+			} else {
+				expr2 = expr2.insert(getInsertPosition(expr2), term + " ");
+				StringBuilder toPush = new StringBuilder("(+ " + expr2 + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
 			}
-			else
-				return false; //ERROR
 		}
 		// expr2 -> - term expr2
 		else if (lookaheadToken == '-') {
-			lookaheadToken = in.read();
-			if (term() && expr2()) {
-				StringBuilder expr22 = stack.pop();
-				StringBuilder term = stack.pop();
-				//...
-				return true;
+			lookaheadToken = consume();
+			term();
+			expr2();
+			StringBuilder expr2 = stack.pop();
+			StringBuilder term = stack.pop();
+			if (expr2.toString().equals("")) {
+				StringBuilder toPush = new StringBuilder("(- " + term + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
+			} else {
+				expr2 = expr2.insert(getInsertPosition(expr2), term + " ");
+				StringBuilder toPush = new StringBuilder("(- " + expr2 + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
 			}
-			else
-				return false; //ERROR			
 		}
 		// expr2 -> ε
-		else if (lookaheadToken == ')' || lookaheadToken == '\n') {
+		else if (lookaheadToken == ')' || lookaheadToken == '\n') 
 			stack.push(new StringBuilder(""));
-			return true;	
+		else 
+			throw new ParseError();
+	}
+
+	private void term() throws IOException, ParseError {
+		factor();
+		term2();
+		StringBuilder term2 = stack.pop();
+		StringBuilder factor = stack.pop();
+		if (term2.toString().equals("")) {
+			stack.push(factor);
+			System.out.println("ToPush: " + factor);
 		}
-		// ERROR
 		else {
-			return false;
+			StringBuilder toPush = term2.insert(getInsertPosition(term2), factor + " ");
+			stack.push(toPush);
+			System.out.println("ToPush: " + toPush);
 		}
 	}
-	
-	private boolean term() throws IOException {
-		System.out.println("term");
-		if (factor() && term2()) {
-			StringBuilder term2 = stack.pop();
-			StringBuilder factor = stack.pop();
-			if (term2.equals(""))
-				stack.push(factor);
-			else
-				//...
-			return true;
-		}
-		return false;
-	}
-	
-	private boolean term2() throws IOException {
-		System.out.println("term2");
+
+	private void term2() throws IOException, ParseError {
 		// term2 -> * factor term2
 		if (lookaheadToken == '*') {
-			lookaheadToken = in.read();
-			if (factor() && term2()) {
-				StringBuilder term2 = stack.pop();
-				StringBuilder factor = stack.pop();
-				//..
-				return true;
+			lookaheadToken = consume();
+			factor();
+			term2();
+			StringBuilder term2 = stack.pop();
+			StringBuilder factor = stack.pop();
+			if (term2.toString().equals("")) {
+				StringBuilder toPush = new StringBuilder("(* " + factor + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
+			} else {
+				term2 = term2.insert(getInsertPosition(term2), factor + " ");
+				StringBuilder toPush = new StringBuilder("(* " + term2 + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
 			}
-			else 
-				return false; //ERROR
 		}
 		// term2 -> / factor term2
 		else if (lookaheadToken == '/') {
-			lookaheadToken = in.read();
-			if (factor() && term2()) {
-				StringBuilder term2 = stack.pop();
-				StringBuilder factor = stack.pop();
-				if (term2.equals("")) 
-					stack.push(factor.insert(0, "/ "));
-				else {
-					char operator = term2.charAt(0);
-					
-				}
-				return true;
+			lookaheadToken = consume();
+			factor();
+			term2();
+			StringBuilder term2 = stack.pop();
+			StringBuilder factor = stack.pop();
+			if (term2.toString().equals("")) {
+				StringBuilder toPush = new StringBuilder("(/ " + factor + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
+			} else {
+				term2 = term2.insert(getInsertPosition(term2), factor + " ");
+				StringBuilder toPush = new StringBuilder("(/ " + term2 + ")");
+				stack.push(toPush);
+				System.out.println("ToPush: " + toPush);
 			}
-			else 
-				return false; //ERROR			
 		}
 		// term2 -> ε
-		else if (lookaheadToken == '+' || lookaheadToken == '-' ||
-				 lookaheadToken == ')' || lookaheadToken == '\n') { 
+		else if (lookaheadToken == '+' || lookaheadToken == '-'
+			  || lookaheadToken == ')' || lookaheadToken == '\n') {
 			stack.push(new StringBuilder(""));
-			return true;
-		}
-		// ERROR
-		else {
-			return false;
-		}		
+		} else
+			throw new ParseError();
 	}
-	
-	private boolean factor() throws IOException {
-		System.out.println("factor");
+
+	private void factor() throws IOException, ParseError {
 		// factor -> '0..9'
-		if (lookaheadToken > '0' && lookaheadToken < '9') { 
-			lookaheadToken = in.read();
-			stack.push(new StringBuilder(Integer.toString(lookaheadToken)));
-			return true;
+		if (lookaheadToken > '0' && lookaheadToken < '9') {
+			StringBuilder toPush = new StringBuilder(Character.toString((char) lookaheadToken));
+			stack.push(toPush);
+			System.out.println("ToPush: " + toPush);
+			lookaheadToken = consume();
 		}
 		// factor -> (expr)
 		else if (lookaheadToken == '(') {
-			lookaheadToken = in.read();
-			if (expr() && lookaheadToken == ')')  {
-				//...
-				return true;
+			lookaheadToken = consume();
+			expr();
+			if (lookaheadToken == ')')
+				lookaheadToken = consume();
+			else
+				throw new ParseError();
+		} else
+			throw new ParseError();
+	}
+
+	private int getInsertPosition(StringBuilder string) {
+		for (int i = 0; i < string.length(); i += 2) {	
+			if (string.charAt(i) == '(') {			
+				int j = i + 3;
+				// First operand
+				if (string.charAt(j) == '(') {
+					int openPars = 1;					
+					while (openPars != 0) {
+						j++;
+						if (string.charAt(j) == ')') openPars--;
+						else if (string.charAt(j) == '(') openPars++;
+					}
+					j--;
+				}
+				// Second operand
+				if (string.charAt(j + 1) == ')')
+					return i+3;
 			}
-			else 
-				return false; //ERROR
 		}
-		// ERROR
-		else {
-			return false;
-		}		
+		return -1;
 	}
 }
