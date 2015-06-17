@@ -1,0 +1,127 @@
+isArithmeticOperation(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "MOVE(.)*(PLUS|MINUS|TIMES|LT)(.)*").
+			
+/* Base case */
+constant(?method, ?line, ?variable, ?value) :-
+			constMove(?method, ?line, ?variable, ?value).			
+/* Folding */
+constant(?method, ?line, ?variable, ?value) :- 
+			isArithmeticOperation(?method, ?line),
+			varUse(?method, ?line, ?operand1),
+			varUse(?method, ?line, ?operand2),
+			?operand1 != ?operand2,
+			constant(?method, ?line, ?operand1, ?value1),
+			constant(?method, ?line, ?operand2, ?value2),			
+			varDef(?method, ?line, ?variable),	
+			instruction(?method, ?line, ?instruction),		
+			REGEX(?instruction, "(.)*PLUS(.)*"),
+			?value1 + ?value2 = ?value.
+constant(?method, ?line, ?variable, ?value) :- 
+			isArithmeticOperation(?method, ?line),
+			varUse(?method, ?line, ?operand1),
+			varUse(?method, ?line, ?operand2),
+			?operand1 != ?operand2,
+			constant(?method, ?line, ?operand1, ?value1),
+			constant(?method, ?line, ?operand2, ?value2),			
+			varDef(?method, ?line, ?variable),	
+			instruction(?method, ?line, ?instruction),		
+			REGEX(?instruction, "(.)*MINUS(.)*"),
+			?value1 - ?value2 = ?value.
+constant(?method, ?line, ?variable, ?value) :- 
+			isArithmeticOperation(?method, ?line),
+			varUse(?method, ?line, ?operand1),
+			varUse(?method, ?line, ?operand2),
+			?operand1 != ?operand2,
+			constant(?method, ?line, ?operand1, ?value1),
+			constant(?method, ?line, ?operand2, ?value2),			
+			varDef(?method, ?line, ?variable),			
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "(.)*TIMES(.)*"),
+			?value1 * ?value2 = ?value.
+constant(?method, ?line, ?variable, ?value) :- 
+			isArithmeticOperation(?method, ?line),
+			varUse(?method, ?line, ?operand1),
+			varUse(?method, ?line, ?operand2),
+			?operand1 != ?operand2,
+			constant(?method, ?line, ?operand1, ?value1),
+			constant(?method, ?line, ?operand2, ?value2),			
+			varDef(?method, ?line, ?variable),			
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "(.)*LT(.)*"),
+			?value1 < ?value2,
+			?value = 1.	
+constant(?method, ?line, ?variable, ?value) :- 
+			isArithmeticOperation(?method, ?line),
+			varUse(?method, ?line, ?operand1),
+			varUse(?method, ?line, ?operand2),
+			?operand1 != ?operand2,
+			constant(?method, ?line, ?operand1, ?value1),
+			constant(?method, ?line, ?operand2, ?value2),			
+			varDef(?method, ?line, ?variable),
+			instruction(?method, ?line, ?instruction),			
+			REGEX(?instruction, "(.)*LT(.)*"),
+			?value1 >= ?value2,
+			?value = 0.	
+
+/* Inside same block */			
+constant(?method, ?line, ?variable, ?value) :- 
+			! blockStarts(?method, ?line),
+			next(?method, ?prevLine, ?line),
+			?prevLine + 1 = ?line,
+			constant(?method, ?prevLine, ?variable, ?value),
+			! varDef(?method, ?line, ?variable).
+/* Two predecessors */
+constant(?method, ?line, ?variable, ?value) :- 
+			next(?method, ?prevLine1, ?line),
+			next(?method, ?prevLine2, ?line),
+			?prevLine1 != ?prevLine2,
+			constant(?method, ?prevLine1, ?variable, ?value),
+			constant(?method, ?prevLine2, ?variable, ?value),
+			! varDef(?method, ?line, ?variable).
+
+/* 
+--------------------------------------------------------------
+			IMPORTED FROM BasicBlockComputation.iris		*/
+isLabel(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "L(.)*").	
+isJump(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "(JUMP|CJUMP)(.)*").	
+isReturn(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "RETURN(.)*").
+isLastInstruction(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			! next(?method, ?line, ?someLine).
+
+blockStarts(?method, 1) :-
+			instruction(?method, 1, ?instruction).
+blockStarts(?method, ?line) :-
+			isLabel(?method, ?line).	
+blockStarts(?method, ?line) :-
+			next(?method, ?prevLine, ?line),
+			isJump(?method, ?prevLine).
+
+blockEnds(?method, ?line) :-
+			isLastInstruction(?method, ?line).	
+blockEnds(?method, ?line) :-
+			isJump(?method, ?line).
+blockEnds(?method, ?line) :-
+			next(?method, ?line, ?nextLine),
+			isLabel(?method, ?nextLine).
+			
+
+block(?method, ?startLine, ?finishLine) :-
+			blockStarts(?method, ?startLine),
+			findEndBlock(?method, ?startLine, ?finishLine).
+
+findEndBlock(?method, ?startLine, ?finishLine) :-
+			next(?method, ?startLine, ?finishLine),
+			blockEnds(?method, ?finishLine).			
+findEndBlock(?method, ?startLine, ?finishLine) :-
+			next(?method, ?startLine, ?nextLine),
+			! blockEnds(?method, ?nextLine),
+			findEndBlock(?method, ?nextLine, ?finishLine).			
+/* ---------------------------------------------------------- */

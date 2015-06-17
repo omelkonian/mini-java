@@ -1,0 +1,22 @@
+#!/bin/bash
+# Compiles all examples using javac AND spiglet
+
+# Lower to Spiglet
+echo "##############################################"
+echo "		  $(tput setaf 4)SPIGLET$(tput sgr0) 		 "
+echo "##############################################"
+java Main Examples/mini-java/*.java
+
+echo "##############################################"
+echo "	   $(tput setaf 4)JAVA BYTE-CODE$(tput sgr0) 	 "
+echo "##############################################"
+# Lower to Java bytecode
+for java in Examples/mini-java/*.java
+	do				
+		name=${java:19}
+		name=${name:0:${#name}-5}			
+		echo "${name}: $(tput setaf 3)Compiled$(tput sgr0)" 
+		mkdir output/"${name}"
+		javac -d output/"${name}" $java		
+	done
+exit 0

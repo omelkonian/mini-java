@@ -1,0 +1,38 @@
+isLabel(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "L(.)*").	
+isJump(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "(JUMP|CJUMP)(.)*").	
+isLastInstruction(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			! next(?method, ?line, ?someLine).
+
+blockStarts(?method, 1) :-
+			instruction(?method, 1, ?instruction).
+blockStarts(?method, ?line) :-
+			isLabel(?method, ?line).	
+blockStarts(?method, ?line) :-
+			next(?method, ?prevLine, ?line),
+			isJump(?method, ?prevLine).
+
+blockEnds(?method, ?line) :-
+			isLastInstruction(?method, ?line).	
+blockEnds(?method, ?line) :-
+			isJump(?method, ?line).
+blockEnds(?method, ?line) :-
+			next(?method, ?line, ?nextLine),
+			isLabel(?method, ?nextLine).
+			
+
+block(?method, ?startLine, ?finishLine) :-
+			blockStarts(?method, ?startLine),
+			findEndBlock(?method, ?startLine, ?finishLine).
+
+findEndBlock(?method, ?startLine, ?finishLine) :-
+			next(?method, ?startLine, ?finishLine),
+			blockEnds(?method, ?finishLine).			
+findEndBlock(?method, ?startLine, ?finishLine) :-
+			next(?method, ?startLine, ?nextLine),
+			! blockEnds(?method, ?nextLine),
+			findEndBlock(?method, ?nextLine, ?finishLine).			

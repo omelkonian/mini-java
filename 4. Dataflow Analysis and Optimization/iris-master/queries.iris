@@ -1,0 +1,14 @@
+/* Live Range Computation */
+//?- live(?method, ?line, ?variable).
+
+/* Dead Code Computation */
+//?- dead(?method, ?line).
+
+/* Constant Propagation */
+//?- constant(?method, ?line, ?variable, ?value).
+
+/* Copy Propagation */
+//?- identical(?method, ?line, ?variable1, ?variable2.
+
+/* Basic Block Computation */
+?- block(?method, ?startLine, ?finishLine).

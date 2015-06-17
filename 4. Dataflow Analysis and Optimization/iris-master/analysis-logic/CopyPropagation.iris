@@ -1,0 +1,66 @@
+/* Base case */
+identical(?method, ?line, ?variable1, ?variable2) :-
+			varMove(?method, ?line, ?variable1, ?variable2).
+/* Inside same block */
+identical(?method, ?line, ?variable1, ?variable2) :-
+			! blockStarts(?method, ?line),
+			next(?method, ?prevLine, ?line),
+			?line - 1 = ?prevLine,
+			identical(?method, ?prevLine, ?variable1, ?variable2),
+			! varDef(?method, ?line, ?variable1),
+			! varDef(?method, ?line, ?variable2).
+/* From jump */
+identical(?method, ?line, ?variable1, ?variable2) :- 
+			next(?method, ?prevLine1, ?line),
+			next(?method, ?prevLine2, ?line),
+			?prevLine1 != ?prevLine2,			
+			identical(?method, ?prevLine1, ?variable1, ?variable2),
+			identical(?method, ?prevLine2, ?variable1, ?variable2),
+			! varDef(?method, ?line, ?variable1),
+			! varDef(?method, ?line, ?variable2).
+
+/* 
+--------------------------------------------------------------
+			IMPORTED FROM BasicBlockComputation.iris		*/
+isLabel(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "L(.)*").	
+isJump(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "(JUMP|CJUMP)(.)*").	
+isReturn(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			REGEX(?instruction, "RETURN(.)*").
+isLastInstruction(?method, ?line) :-
+			instruction(?method, ?line, ?instruction),
+			! next(?method, ?line, ?someLine).
+
+blockStarts(?method, 1) :-
+			instruction(?method, 1, ?instruction).
+blockStarts(?method, ?line) :-
+			isLabel(?method, ?line).	
+blockStarts(?method, ?line) :-
+			next(?method, ?prevLine, ?line),
+			isJump(?method, ?prevLine).
+
+blockEnds(?method, ?line) :-
+			isLastInstruction(?method, ?line).	
+blockEnds(?method, ?line) :-
+			isJump(?method, ?line).
+blockEnds(?method, ?line) :-
+			next(?method, ?line, ?nextLine),
+			isLabel(?method, ?nextLine).
+			
+
+block(?method, ?startLine, ?finishLine) :-
+			blockStarts(?method, ?startLine),
+			findEndBlock(?method, ?startLine, ?finishLine).
+
+findEndBlock(?method, ?startLine, ?finishLine) :-
+			next(?method, ?startLine, ?finishLine),
+			blockEnds(?method, ?finishLine).			
+findEndBlock(?method, ?startLine, ?finishLine) :-
+			next(?method, ?startLine, ?nextLine),
+			! blockEnds(?method, ?nextLine),
+			findEndBlock(?method, ?nextLine, ?finishLine).			
+/* ---------------------------------------------------------- */

@@ -1,0 +1,8 @@
+// Dead Code
+?- dead(?method, ?line).
+
+// Constant Propagation
+?- constant(?method, ?line, ?variable, ?value).
+
+// Copy Propagation
+?- identical(?method, ?line, ?variable1, ?variable2).

@@ -1,0 +1,37 @@
+#!/bin/bash
+# Checks if all outputs have same result with JVM
+echo "##############################################"
+echo "		  $(tput setaf 4)CROSS-CHECK$(tput sgr0) 		 "
+echo "##############################################"
+for java in *.spg
+	do		
+		name=${java:0:${#java}-4}		
+		outS="$name"					
+
+		# Run with pgi
+		input="$name.spg"
+		outFile1="$name.PGIout"
+		java -jar pgi.jar < $input > $outFile1
+
+		# Remove ERROR if found
+		check=$(grep ERROR "${outFile1}")
+		if [ -n "${check}" ]; then
+			 sed '$d' $outFile1 > file.tmp && mv file.tmp $outFile1
+		fi
+		
+		# Run with jvm
+		outFile2="$name.JVMout"
+		java -classpath "./${name}" $name > $outFile2	
+
+		# Check diff
+		result=$(diff $outFile1 $outFile2)
+		size=${#result}		
+		if [ $size -eq 0 ]; then
+			outS+=": $(tput setaf 2)Pass$(tput sgr0)"
+		else
+			outS+=": $(tput setaf 1)Fail$(tput sgr0)"
+		fi
+		echo -e $outS
+	done
+
+exit 0

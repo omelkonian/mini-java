@@ -1,0 +1,13 @@
+live(?method, ?line, ?variable) :-
+			pathToUse(?variable, ?method, ?line).
+
+pathToUse(?variable, ?method, ?line) :-
+			varUse(?method, ?line, ?variable).		
+pathToUse(?variable, ?method, ?line) :-
+			next(?method, ?line, ?nextLine),
+			varUse(?method, ?nextLine, ?variable).
+pathToUse(?variable, ?method, ?line) :-
+			next(?method, ?line, ?nextLine),
+			! varDef(?method, ?nextLine, ?variable),
+			pathToUse(?variable, ?method, ?nextLine).
+

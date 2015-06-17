@@ -1,0 +1,138 @@
+import java_cup.runtime.*;
+
+parser code {:
+    // Connect this parser to a scanner!
+    Scanner s;
+    Parser(Scanner s){ this.s=s; }
+:}
+
+scan with {: 
+                Symbol  sym = s.next_token();
+/*
+                if (sym.sym == 0) System.out.println("EOF");
+                else if (sym.sym == 4) System.out.println("TIMES");
+                else if (sym.sym == 17) System.out.println("GEQ");
+                else if (sym.sym == 6) System.out.println("MOD");
+                else if (sym.sym == 20) System.out.println("ELSE");
+                else if (sym.sym == 2) System.out.println("PLUS");
+                else if (sym.sym == 11) System.out.println("RPAREN");
+                else if (sym.sym == 22) System.out.println("IDENTIFIER");
+                else if (sym.sym == 19) System.out.println("IF");
+                else if (sym.sym == 10) System.out.println("LPAREN");
+                else if (sym.sym == 16) System.out.println("LE");
+                else if (sym.sym == 15) System.out.println("GR");
+                else if (sym.sym == 9) System.out.println("RBRACKET");
+                else if (sym.sym == 12) System.out.println("COMMA");
+                else if (sym.sym == 21) System.out.println("NUMBER");
+                else if (sym.sym == 5) System.out.println("DIV");
+                else if (sym.sym == 3) System.out.println("MINUS");
+                else if (sym.sym == 1) System.out.println("error");
+                else if (sym.sym == 13) System.out.println("EQ");
+                else if (sym.sym == 18) System.out.println("LEQ");
+                else if (sym.sym == 14) System.out.println("NEQ");
+                else if (sym.sym == 7) System.out.println("UMINUS");
+                else if (sym.sym == 8) System.out.println("RPAREN_LBRACKET");
+*/
+                return sym; 
+            :};
+
+
+/* Terminals (tokens returned by the scanner). */
+terminal PLUS, MINUS, TIMES, DIV, MOD, UMINUS, RPAREN_LBRACKET, RBRACKET, LPAREN, RPAREN, COMMA;
+terminal EQ, NEQ, GR, LE, GEQ, LEQ, IF, ELSE;
+terminal Integer NUMBER;     
+terminal String  IDENTIFIER; 
+
+/*  Non terminals */
+non terminal String program, basic_list, basic, function_call, function_definition, arguments, argument2; 
+non terminal String identifier_list, identifier_list_rest;
+non terminal String body, statement, num_expr, if_expr, log_expr, factor, connective;
+
+
+/**
+ *  Precedence Declarations
+ */
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV, MOD;
+precedence left UMINUS;
+precedence left COMMA;
+
+
+/**
+ *  The Grammar Rules
+ */
+start with program;
+
+program     ::=     basic_list:bl        {: System.out.println("\n" + bl); RESULT=bl;:}
+            ;
+
+basic_list  ::=     basic:b basic_list:bl       {: RESULT=new String(b + "\n" + bl); :}
+            |       /*epsilon*/		            {: RESULT = "";:}
+            ;
+
+basic   ::=     function_call:fc                {: RESULT=fc; :}
+        |       function_definition:fd          {: RESULT=fd; :}
+        ;
+
+function_call   ::=     IDENTIFIER:i LPAREN arguments:args RPAREN    {: RESULT=new String("("+i+args+")"); :}
+                ;
+
+arguments       ::=     num_expr:ne argument2:arg2                {: RESULT=new String(" "+ne+ arg2); :}
+                |        /*epsilon*/                              {: RESULT = ""; :}
+                ;
+
+argument2       ::=     COMMA num_expr:arg argument2:arg2        {: RESULT=new String(" "+arg+arg2); :}
+                |       /*epsilon*/                              {: RESULT = ""; :}
+                ;
+
+function_definition     ::=     IDENTIFIER:i LPAREN identifier_list:il RPAREN_LBRACKET body:bd   
+                                {: RESULT=new String("(define ("+i+il+") \n   "+bd+"\n)"); :}
+                        ;
+
+identifier_list         ::=     IDENTIFIER:i identifier_list_rest:ilr       {: RESULT=new String(" "+i+ilr); :}
+                        |       /*epsilon*/                                 {: RESULT=""; :}
+                        ;
+
+identifier_list_rest    ::=     COMMA IDENTIFIER:i identifier_list_rest:ilr {: RESULT=new String(" "+i+ilr); :}
+                        |       /*epsilon*/                                 {: RESULT=""; :}
+                        ;
+
+
+body            ::=    statement:st RBRACKET	{: RESULT=st; :}
+                ;
+
+statement       ::=     num_expr:ne             {: RESULT=ne; :}
+                |       if_expr:ie              {: RESULT=ie; :}
+                ;
+
+num_expr        ::=     num_expr:ne1 PLUS num_expr:ne2		       {: RESULT=new String("(+ "+ne1+" "+ne2+")"); :}
+        		|	    num_expr:ne1 MINUS num_expr:ne2		       {: RESULT=new String("(- "+ne1+" "+ne2+")"); :}
+        		|	    num_expr:ne1 TIMES num_expr:ne2		       {: RESULT=new String("(* "+ne1+" "+ne2+")"); :}
+        		|	    num_expr:ne1 DIV num_expr:ne2		       {: RESULT=new String("(/ "+ne1+" "+ne2+")"); :}
+        		|	    num_expr:ne1 MOD num_expr:ne2		       {: RESULT=new String("(modulo "+ne1+" "+ne2+")"); :}
+        		| 	    MINUS num_expr:ne			               {: RESULT=new String("- "+ne); :}
+        			    %prec UMINUS
+        		|	    LPAREN num_expr:ne RPAREN		           {: RESULT=ne; :}   
+        		|	    factor:f				                   {: RESULT=f; :}
+        		;
+
+factor          ::=     NUMBER:n                      {: RESULT=n.toString(); :}
+                |       IDENTIFIER:i                  {: RESULT=i; :}               
+                |       function_call:fc              {: RESULT=fc; :}
+                ;
+
+if_expr         ::=     IF log_expr:le statement:st1 ELSE statement:st2    
+                        {: RESULT=new String("(if "+le+" "+st1+" "+st2+")"); :}
+                ;
+
+log_expr        ::=     LPAREN num_expr:ne1 connective:c num_expr:ne2 RPAREN  
+                        {: RESULT=new String("("+c+" "+ne1+" "+ne2+")"); :}
+                ;
+
+connective      ::=     EQ      {: RESULT="="; :}
+                |       NEQ     {: RESULT="!="; :}
+                |       GR      {: RESULT=">"; :}
+                |       LE      {: RESULT="<"; :}
+                |       GEQ     {: RESULT=">="; :}
+                |       LEQ     {: RESULT="<="; :}
+                ;

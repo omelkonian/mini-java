@@ -1,0 +1,40 @@
+x()  {
+    30
+}
+
+x()
+
+y() {
+    15+4*x()
+}
+
+z(r, s, x) {
+    r/2*s + x
+}
+
+y()
+z(y(), x(), 10)
+
+fib(n) {
+    if(n == 0)
+        0
+    else 
+        if (n == 1)
+            1
+        else
+            fib(n-1) + fib(n-2)
+}
+
+fib(0)
+fib(6)
+
+gcd(a, b) {
+    if (b == 0)
+        a
+    else
+        gcd(b, a%b)
+}
+
+gcd(8, 28)
+gcd(105, 230)
+gcd(24, 132)

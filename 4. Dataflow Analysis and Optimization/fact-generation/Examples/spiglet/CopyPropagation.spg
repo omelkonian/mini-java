@@ -1,0 +1,20 @@
+MAIN
+	MOVE TEMP 0 TEMP 1 				// 0-1			
+	MOVE TEMP 1 TEMP 2				// 1-2	
+	CJUMP TEMP 1 L1					// --//-- 		
+	MOVE TEMP 2 TEMP 0  			// 2-0
+	MOVE TEMP 3 PLUS TEMP 2 100		// 2-0 
+L1	NOOP									
+	MOVE TEMP 10 TEMP 11			// 10-11
+	MOVE TEMP 11 300				// - 
+	MOVE TEMP 12 TEMP 10			// 12-10
+	CJUMP TEMP 1 L2					// --//--
+	MOVE TEMP 10 TEMP 0				// 10-0
+	MOVE TEMP 2 TEMP 10				// + 2-10
+	MOVE TEMP 3 PLUS TEMP 10 100	// --//--
+L2	NOOP							
+	MOVE TEMP 2 TEMP 0				// 2-0
+	MOVE TEMP 3 PLUS TEMP 0 100		// -/-
+	MOVE TEMP 15 LT TEMP 1 TEMP 0	// -/-
+	PRINT TEMP 2					// -/-
+END
